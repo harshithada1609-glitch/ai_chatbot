@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>BrainByte</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+  <div class="chat-container">
+    
+    <!-- Header -->
+    <div class="chat-header">
+      <div class="status-dot"></div>
+      <h2>BrainByte</h2>
+      <button id="clearBtn" title="Clear chat">🗑</button>
+    </div>
+
+    <!-- Chat Box -->
+    <div class="chat-box" id="chatBox">
+
+      <!-- Welcome Message -->
+      <div class="message bot">
+        <div class="bubble">
+          👋 Welcome to AI Interview Assistant <br><br>
+
+          I can help you with:
+          <br>✅ HR Interview Questions
+          <br>✅ Python Interview Questions
+          <br>✅ Data Science Concepts
+          <br>✅ Self Introduction
+          <br>✅ Resume Based Questions
+          <br>✅ Technical Interview Preparation
+          <br>✅ AI & Machine Learning Topics
+          <br><br>
+
+          💡 Example Questions:
+          <br>• Tell me about yourself
+          <br>• Python interview questions
+          <br>• What is Machine Learning?
+          <br>• Data Science interview questions
+          <br>• HR round preparation
+          <br>• Explain OOPs concepts
+          <br>• SQL interview questions
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Input -->
+    <div class="chat-input">
+      <input 
+        type="text" 
+        id="userInput" 
+        placeholder="Ask interview questions..." 
+        autocomplete="off" 
+      />
+      <button id="sendBtn">Send</button>
+    </div>
+
+  </div>
+
+  <script>
+    const chatBox = document.getElementById("chatBox");
+    const userInput = document.getElementById("userInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const clearBtn = document.getElementById("clearBtn");
+
+    // Add Messages
+    function appendMessage(role, text) {
+      const div = document.createElement("div");
+      div.classList.add("message", role);
+
+      div.innerHTML = `
+        <div class="bubble">${text}</div>
+      `;
+
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // Typing Animation
+    function appendTyping() {
+      const div = document.createElement("div");
+
+      div.classList.add("message", "bot", "typing-indicator");
+
+      div.innerHTML = `
+        <div class="bubble">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      `;
+
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      return div;
+    }
+
+    // Send Message
+    async function sendMessage() {
+
+      const message = userInput.value.trim();
+
+      if (!message) return;
+
+      // User Message
+      appendMessage("user", message);
+
+      userInput.value = "";
+      sendBtn.disabled = true;
+
+      // Typing
+      const typingEl = appendTyping();
+
+      try {
+
+        const res = await fetch("/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ message })
+        });
+
+        const data = await res.json();
+
+        typingEl.remove();
+
+        if (data.reply) {
+          appendMessage("bot", data.reply);
+        } else {
+          appendMessage(
+            "bot",
+            "⚠️ Error: " + (data.error || "Something went wrong.")
+          );
+        }
+
+      } catch (err) {
+
+        typingEl.remove();
+
+        appendMessage(
+          "bot",
+          "⚠️ Could not connect to server."
+        );
+      }
+
+      sendBtn.disabled = false;
+      userInput.focus();
+    }
+
+    // Button Click
+    sendBtn.addEventListener("click", sendMessage);
+
+    // Enter Key
+    userInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        sendMessage();
+      }
+    });
+
+    // Clear Chat
+    clearBtn.addEventListener("click", async () => {
+
+      await fetch("/clear", {
+        method: "POST"
+      });
+
+      chatBox.innerHTML = `
+        <div class="message bot">
+          <div class="bubble">
+            ✅ Chat cleared! <br><br>
+
+            Ask me anything about:
+            <br>• HR Interviews
+            <br>• Python
+            <br>• Data Science
+            <br>• AI & ML
+            <br>• Resume Questions
+            <br>• Technical Rounds
+          </div>
+        </div>
+      `;
+    });
+
+  </script>
+
+</body>
+</html>
